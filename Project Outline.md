@@ -1,15 +1,15 @@
-# Margin and Shipping Exception Monitor (MVP)
+# AI-Assisted Margin and Shipping Exception Monitor (MVP)
 
 ## 1) Project Summary
-This project is a lightweight analytics and workflow automation MVP designed to monitor **margin risk** and **shipping exceptions**.
+This project is a lightweight business automation MVP that monitors **margin risk** and **shipping exceptions**.
 
-The goal is simple:
-- detect low-margin or loss-making orders early
-- flag delayed or high-risk shipments automatically
-- make those exceptions visible in a dashboard
-- reduce manual checking by sending alerts when important issues appear
+It combines:
+- **workflow automation** with **n8n**
+- **SQL-based exception detection** in **BigQuery**
+- **dashboard visibility** in **Looker Studio**
+- an **AI layer** that generates plain-English summaries of the most important exceptions
 
-This project is inspired by real business problems in operations, supply chain, and industrial sourcing environments, where teams need quick visibility into order health, margin pressure, and fulfillment issues.
+The aim is to turn a manual review process into an AI-assisted workflow that is faster, clearer, and easier for business teams to act on.
 
 ---
 
@@ -19,9 +19,9 @@ In many companies, order and shipping data sit in CSV files, spreadsheets, or di
 That creates 3 common problems:
 1. **Low-margin orders are noticed too late**
 2. **Shipping delays are tracked manually**
-3. **Teams do not have one clear view of exceptions that need action**
+3. **Teams do not get a fast explanation of which issues need action first**
 
-This MVP solves that by creating a small automated flow that checks order and shipment data on a schedule and highlights risky cases.
+This MVP solves that by checking order and shipment data automatically, flagging risky cases, and generating an AI summary of the most important exceptions.
 
 ---
 
@@ -32,54 +32,51 @@ Build a small end-to-end workflow that:
 - runs SQL checks for margin and delivery exceptions
 - writes flagged records into an exceptions table
 - updates a **Looker Studio** dashboard
-- optionally sends an alert using **n8n**
+- uses **n8n** to trigger the workflow and send alerts
+- generates an **AI summary** of the highest-priority exceptions in plain English
 
 This is not a full production system.
-It is a fast, practical MVP to prove automation, analytics, and business thinking.
+It is a practical MVP to prove automation, analytics, and AI-assisted business support.
 
 ---
 
 ## 4) What is being automated?
 Before automation, someone would have to:
 - open CSV files manually
-- compare selling price vs cost vs shipping cost
+- compare selling price, cost, and shipping cost row by row
 - check whether promised delivery dates were missed
 - identify risky orders one by one
-- build or refresh reports manually
+- refresh reports manually
+- explain the most important issues to stakeholders
 
 This project automates that repetitive review process.
 
 ### Automated steps
 1. **CSV ingestion**
 2. **Data cleaning and loading into BigQuery**
-3. **Margin calculation**
-4. **Delay calculation**
-5. **Rule-based anomaly flagging**
-6. **Exception table creation**
-7. **Dashboard refresh**
-8. **Optional email / Slack-style alert**
+3. **Margin and delay calculation**
+4. **Rule-based exception flagging**
+5. **Exception table refresh**
+6. **Dashboard refresh**
+7. **AI-generated summary of top exceptions**
+8. **Optional email or Slack-style alert**
 
 ---
 
-## 5) Where AI fits in
-AI is **optional** in the MVP.
-The first version should mainly use **rule-based logic** because it is faster, easier to explain, and more reliable for a portfolio project.
+## 5) How AI is used
+The core detection logic still comes from **SQL checks** because they are fast, clear, and easy to validate.
 
-### Good AI use in this project
-A small AI layer can be added in one of these ways:
-- classify exception notes into categories such as `margin_issue`, `shipping_delay`, `cost_spike`, `manual_review`
-- generate a short natural-language summary of the top daily exceptions for leadership
-- suggest priority levels based on exception context
+### Option A - AI-generated daily exception summary
+After SQL flags low-margin and delayed orders, the workflow sends the highest-priority exceptions to an LLM step that:
+- summarizes the top issues in plain English
+- explains likely business drivers such as shipping cost spikes or delivery bottlenecks
+- highlights which cases should be reviewed first
 
-### Important note
-For the MVP, **AI is not the core engine**.
-The core engine is:
-- SQL checks
-- automation workflow
-- business alerts
-- dashboard visibility
+### Example AI output
+> Today’s highest-risk exceptions include 3 negative-margin orders driven by elevated shipping costs and 4 critical shipment delays concentrated in one carrier lane. Immediate review is recommended for orders 1045, 1052, and 1061.
 
-That is still very relevant for automation roles.
+### Why this matters
+This turns raw exception rows into fast decision support for leadership and operations teams.
 
 ---
 
@@ -87,120 +84,37 @@ That is still very relevant for automation roles.
 ### Core stack
 - **BigQuery** for storage and SQL checks
 - **Looker Studio** for dashboarding
-- **n8n** for workflow automation
+- **n8n** for workflow automation and AI orchestration
 - **Python** (optional) for CSV preparation or synthetic data generation
 
 ### Why this stack?
 - fast to build
 - light architecture
 - close to real analytics work
-- strong enough for a GitHub portfolio project
+- relevant for workflow automation roles
+- practical for a GitHub MVP
 
 ---
 
-## 7) Data Options
-### Option A: Use open data
-Use a public e-commerce or logistics dataset and adapt it.
+## 7) Exception Logic
+The monitor flags orders when:
+- margin is below threshold
+- margin is negative
+- shipment is delayed
+- delay is critical
+- an order needs manual review
 
-### Option B: Use synthetic CSVs (recommended for speed)
-Create 3 CSV files:
+Simple examples:
+- **negative margin**: `margin_value < 0`
+- **low margin**: `margin_pct < 10%`
+- **late shipment**: `delay_days > 0`
+- **critical delay**: `delay_days >= 3`
 
-#### `orders.csv`
-- order_id
-- order_date
-- customer_id
-- product_type
-- country
-- selling_price
-- quantity
-- quoted_margin_pct
-
-#### `costs.csv`
-- order_id
-- material_cost
-- production_cost
-- packaging_cost
-- shipping_cost
-- total_cost
-
-#### `shipments.csv`
-- order_id
-- carrier
-- promised_delivery_date
-- actual_delivery_date
-- shipment_status
-- tracking_event_count
-
-Synthetic data is fine here because the value of the project comes from the workflow and business logic.
+This keeps the logic simple, explainable, and useful for an MVP.
 
 ---
 
-## 8) Core Calculations
-### Margin
-```sql
-margin_value = selling_price - total_cost
-margin_pct = SAFE_DIVIDE((selling_price - total_cost), selling_price)
-```
-
-### Shipping delay
-```sql
-delay_days = DATE_DIFF(actual_delivery_date, promised_delivery_date, DAY)
-```
-
----
-
-## 9) Exception Rules
-The MVP should use simple, easy-to-explain rules.
-
-### Margin exception flags
-- `negative_margin_flag` -> margin_value < 0
-- `low_margin_flag` -> margin_pct < 0.10
-- `cost_spike_flag` -> shipping_cost or total_cost much higher than expected
-
-### Shipping exception flags
-- `late_shipment_flag` -> delay_days > 0
-- `critical_delay_flag` -> delay_days >= 3
-- `stalled_shipment_flag` -> status unchanged for too long
-
-### Overall priority
-- **High** -> negative margin OR critical delay
-- **Medium** -> low margin OR late shipment
-- **Low** -> informational exception only
-
----
-
-## 10) BigQuery Tables
-### `stg_orders`
-cleaned order data
-
-### `stg_costs`
-cleaned cost data
-
-### `stg_shipments`
-cleaned shipment data
-
-### `fct_order_health`
-joined order + cost + shipment table with calculations
-
-### `fct_exceptions`
-filtered table that only contains flagged records
-
-Suggested columns for `fct_exceptions`:
-- order_id
-- order_date
-- country
-- selling_price
-- total_cost
-- margin_value
-- margin_pct
-- delay_days
-- exception_type
-- priority_level
-- action_status
-
----
-
-## 11) Workflow Design (n8n)
+## 8) Workflow Design (n8n)
 ### Trigger
 - manual trigger for demo
 - later: scheduled trigger once per day
@@ -210,38 +124,21 @@ Suggested columns for `fct_exceptions`:
 2. Validate file structure
 3. Load data into BigQuery staging tables
 4. Run SQL transformation query
-5. Create / refresh exception table
+5. Create or refresh the exception table
 6. Count high-priority exceptions
-7. If count > threshold, send alert
-8. Dashboard reads refreshed exception table
+7. Send top exception rows to an AI step for summary generation
+8. If count is above threshold, send alert with AI summary
+9. Dashboard reads the refreshed exception table
 
 ### Example alert message
-> 7 high-priority exceptions detected today: 3 negative-margin orders and 4 critical shipment delays.
+> 7 high-priority exceptions detected today. AI summary: 3 negative-margin orders are linked to rising shipping costs, and 4 critical delivery delays are concentrated in one carrier route.
 
 ---
 
-## 12) Dashboard KPIs
-### KPI cards
-- total orders
-- total exception orders
-- negative margin orders
-- delayed shipments
-- high-priority exceptions
-- average margin %
-
-### Charts / tables
-- exceptions by country
-- exceptions by product type
-- negative margin trend over time
-- delayed shipments by carrier
-- detail table of flagged orders for manual review
-
----
-
-## 13) MVP Build Plan
+## 9) MVP Build Plan
 ### Phase 1: Data setup
 - create or download CSVs
-- load into BigQuery
+- load them into BigQuery
 - validate column types
 
 ### Phase 2: SQL logic
@@ -254,93 +151,13 @@ Suggested columns for `fct_exceptions`:
 - connect BigQuery to Looker Studio
 - add KPI cards and exception views
 
-### Phase 4: Automation
+### Phase 4: Automation + AI
 - create n8n workflow
 - trigger data load and SQL refresh
+- add AI summary step for high-priority exceptions
 - send simple alert
 
 ---
 
-## 14) Estimated Effort
-### Bare-bones MVP
-**6 to 10 focused hours**
-
-### Cleaner portfolio version
-**1 to 2 extra days** for:
-- README polish
-- screenshots
-- nicer dashboard layout
-- optional AI summary step
-
----
-
-## 15) Project Deliverables
-For GitHub, include:
-- `README.md`
-- sample CSV files
-- SQL scripts
-- n8n workflow export
-- dashboard screenshots
-- short architecture diagram
-
-Suggested repo structure:
-```text
-margin-shipping-exception-monitor/
-│
-├── data/
-│   ├── orders.csv
-│   ├── costs.csv
-│   └── shipments.csv
-│
-├── sql/
-│   ├── staging_queries.sql
-│   ├── order_health.sql
-│   └── exceptions.sql
-│
-├── workflows/
-│   └── n8n_workflow.json
-│
-├── screenshots/
-│   └── dashboard.png
-│
-└── README.md
-```
-
----
-
-## 16) Portfolio Positioning
-### What this project demonstrates
-- workflow automation
-- SQL-based exception monitoring
-- margin and shipping analytics
-- dashboarding for operations visibility
-- translating business pain points into a practical MVP
-
-### Good interview positioning
-> I built a lightweight exception-monitoring workflow that automatically flagged low-margin and delayed orders, refreshed a dashboard, and reduced the need for manual review.
-
----
-
-## 17) Honest Scope Control
-To keep this fast and realistic, avoid these in version 1:
-- no complex machine learning model
-- no full ERP integration
-- no real-time streaming architecture
-- no overengineered infrastructure
-
-The first version should be simple, useful, and easy to explain.
-
----
-
-## 18) Optional Version 2 Ideas
-Later, extend the MVP with:
-- supplier scorecards
-- threshold tuning by country or product type
-- AI-generated daily exception summaries
-- root-cause tagging for exception categories
-- alert acknowledgement workflow for ops teams
-
----
-
-## 19) Final One-Line Summary
-A lightweight business automation project that monitors margin risk and shipping delays, flags exception orders automatically, and gives teams a clear dashboard for faster action.
+## 10) Final One-Line Summary
+A lightweight AI-assisted workflow that flags margin risk and shipping delays, refreshes exception dashboards, and generates plain-English summaries for faster business action.
