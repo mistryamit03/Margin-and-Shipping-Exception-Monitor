@@ -41,3 +41,19 @@ What I learned
 In BigQuery, calculated aliases cannot be safely reused inside later expressions in the same SELECT, so using a CTE makes the query cleaner and easier to maintain
 Exception flags are the step where a dataset becomes operationally useful, because calculations are converted into business rules teams can act on
 Separating High, Medium, and Low priority makes the output much easier for dashboards, alerts, and later AI summaries
+
+
+
+
+Step 5: Reusable BigQuery Views
+
+In this step, I moved from one-off SQL queries to reusable BigQuery views by creating vw_order_health and vw_exceptions. This made the project more structured and closer to a real analytics workflow, where business logic is saved once and reused across dashboards, alerts, and later AI-driven summaries.
+
+What I learned
+A working query is useful for testing, but reusable views make the project more scalable and professional
+vw_order_health stores the full business logic for all orders
+vw_exceptions creates a clean action layer with only flagged orders
+Separating the full health view from the exception view improves readability, reuse, and maintenance
+Business understanding gained
+
+This step showed me how analytics projects become more valuable when the logic is turned into reusable data products instead of remaining as ad hoc queries.
