@@ -16,3 +16,28 @@ The project is not just about SQL, but about translating raw data into business 
 Business understanding gained
 
 This project helped me think more clearly about how operational and financial issues can be turned into automated monitoring logic. Instead of manually checking rows, the goal is to automatically identify which orders need attention and make those risks visible through dashboards, workflows, and AI-generated summaries.
+
+
+
+
+Project Findings Info
+Step 3: Exception Flags
+
+In this step, I turned raw business calculations into actionable exception logic.
+
+After creating margin_value, margin_pct, and delay_days, I added rule-based flags to identify orders that need attention:
+
+negative_margin_flag = loss-making orders
+low_margin_flag = profitable but weak-margin orders
+late_shipment_flag = orders delivered after the promised date
+critical_delay_flag = orders delayed by 3 or more days
+
+I also created a priority_level column to classify each order into:
+
+High = negative margin or critical delay
+Medium = low margin or late shipment
+Low = no major exception
+What I learned
+In BigQuery, calculated aliases cannot be safely reused inside later expressions in the same SELECT, so using a CTE makes the query cleaner and easier to maintain
+Exception flags are the step where a dataset becomes operationally useful, because calculations are converted into business rules teams can act on
+Separating High, Medium, and Low priority makes the output much easier for dashboards, alerts, and later AI summaries
