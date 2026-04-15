@@ -56,4 +56,37 @@ vw_exceptions creates a clean action layer with only flagged orders
 Separating the full health view from the exception view improves readability, reuse, and maintenance
 Business understanding gained
 
+
+
+
+
+Step: Fixing vw_exceptions for dashboard sorting and time analysis
+What went wrong
+
+While using vw_exceptions in Looker Studio, I noticed two problems:
+
+Priority Level was not sorting in the business order I wanted
+Looker Studio was treating priority_level as plain text, so the chart sorting was inconsistent and did not naturally show Low → Medium → High.
+The time chart was not clean enough for monthly analysis
+Using the raw order_date field made the chart harder to read, especially because the data only covered a few months.
+
+A second SQL issue behind the scenes was that I could not directly reuse priority_level in the same SELECT where it was first created, because of how BigQuery handles aliases.
+
+How I fixed it
+
+To solve this properly, I updated the vw_exceptions view by adding one more outer layer of logic:
+
+created a separate prioritized CTE to define priority_level first
+added priority_sort_order so the dashboard could sort priorities in the required business order
+added priority_display as a more dashboard-friendly label
+added order_month using DATE_TRUNC(order_date, MONTH) for cleaner monthly trend reporting
+What I learned
+Sometimes dashboard problems are not really dashboard problems, they are data model problems
+It is often better to fix sorting and display logic in BigQuery views instead of fighting Looker Studio settings
+If a field depends on another calculated field, an extra CTE / outer query improves readability and prevents alias errors
+Adding small helper fields like priority_sort_order and order_month makes the reporting layer much cleaner and easier to control
+Business understanding gained
+
+This step showed me that a strong analytics project is not just about calculations and flags. It also needs a reporting layer that is easy for business users to read, sort, and interpret correctly.
+
 This step showed me how analytics projects become more valuable when the logic is turned into reusable data products instead of remaining as ad hoc queries.
